@@ -2,7 +2,7 @@ import requests, time, hmac, hashlib, os, logging
 from collections import deque
 
 BASE_URL   = "https://mock-api.roostoo.com"
-API_KEY    = os.environ.get("ROOSTOO_API_KEY", "l5zxW7pvWVSsyIOwu6rgovXKgcDGZDpr8RMfKTazfUnKsMthXhfMPEJHk5Q7IKjW")
+API_KEY    = os.environ.get("ROOSTOO_API_KEY", "YTtq1D8FlNv4grUh4zhg9J5S1KqPd1c3bwEkNAwKLEkIQCi6dsEY6Pdpc6HZp08P")
 SECRET_KEY = os.environ.get("ROOSTOO_SECRET_KEY", "Mck1HErBvHXzZqt5QQY0iQHj7US8qka4ZQC5NCVWOI7eqnjTQEa1lO806dG24erX")
 
 PAIRS     = ["BTC/USD", "ETH/USD", "BNB/USD"]
