@@ -17,8 +17,14 @@ payload = {
     'timestamp': timestamp
 }
 
-total = '&'.join(f'{k}={payload[k]}' for k in sorted(payload))
-sig = hmac.new(SECRET_KEY.encode(), total.encode(), hashlib.sha256).hexdigest()
+sorted_keys = sorted(payload.keys())
+total = '&'.join(f'{k}={payload[k]}' for k in sorted_keys)
+
+sig = hmac.new(
+    SECRET_KEY.encode('utf-8'),
+    total.encode('utf-8'),
+    hashlib.sha256
+).hexdigest()
 
 headers = {
     'RST-API-KEY': API_KEY,
