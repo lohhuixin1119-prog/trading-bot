@@ -4,7 +4,7 @@ import hmac
 import hashlib
 
 BASE_URL = 'https://mock-api.roostoo.com'
-API_KEY = 'l5zxW7pvWVSsyIOwu6rgovXKgcDGZDpr8RMfKTazfUnKsMthXhfMPEJHk5Q7IKjW'
+API_KEY = 'YTtq1D8FlNv4grUh4zhg9J5S1KqPd1c3bwEkNAwKLEkIQCi6dsEY6Pdpc6HZp08P'
 SECRET_KEY = 'Mck1HErBvHXzZqt5QQY0iQHj7US8qka4ZQC5NCVWOI7eqnjTQEa1lO806dG24erX'
 
 timestamp = str(int(time.time() * 1000))
