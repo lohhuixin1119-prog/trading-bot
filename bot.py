@@ -62,6 +62,10 @@ def check_signal(pair):
     prev       = deque(list(hist)[:-1])
     short_prev = ma(prev, SHORT_WIN)
     long_prev  = ma(prev, LONG_WIN)
+    if short_prev is None or long_prev is None:
+        return None
+    if short_now is None or long_now is None:
+        return None
     if short_prev <= long_prev and short_now > long_now:
         return "BUY"
     if short_prev >= long_prev and short_now < long_now:
@@ -102,4 +106,4 @@ def run():
 
 if __name__ == "__main__":
     run()
-
+ 
