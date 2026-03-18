@@ -5,22 +5,22 @@ BASE_URL   = "https://mock-api.roostoo.com"
 API_KEY    = "YTtq1D8FlNv4grUh4zhg9J5S1KqPd1c3bwEkNAwKLEkIQCi6dsEY6Pdpc6HZp08P"
 SECRET_KEY = "Mck1HErBvHXzZqt5QQY0iQHj7US8qka4ZQC5NCVWOI7eqnjTQEa1lO806dG24erX"
 
-PAIRS      = ["BTC/USD", "ETH/USD", "BNB/USD"]
-INTERVAL   = 120
-TRADE_PCT  = 0.15
-BB_PERIOD  = 10
-BB_STD     = 1.8
-RSI_PERIOD = 7
-RSI_BUY    = 40
-RSI_SELL   = 60
+PAIRS         = ["BTC/USD", "ETH/USD", "BNB/USD"]
+INTERVAL      = 120
+TRADE_PCT     = 0.15
+BB_PERIOD     = 5
+BB_STD        = 1.8
+RSI_PERIOD    = 4
+RSI_BUY       = 40
+RSI_SELL      = 60
 MIN_TRADE_GAP = 600
-PRECISION  = {"BTC": 3, "ETH": 4, "BNB": 2}
-DATA_FILE  = "price_data.json"
+PRECISION     = {"BTC": 3, "ETH": 4, "BNB": 2}
+DATA_FILE     = "price_data.json"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 log = logging.getLogger(__name__)
 
-price_history   = {pair: deque(maxlen=100) for pair in PAIRS}
+price_history   = {pair: deque(maxlen=50) for pair in PAIRS}
 last_trade_time = {pair: 0 for pair in PAIRS}
 
 def save_prices():
@@ -30,6 +30,7 @@ def save_prices():
 
 def load_prices():
     if not os.path.exists(DATA_FILE):
+        log.info("No saved data, starting fresh")
         return
     with open(DATA_FILE, "r") as f:
         data = json.load(f)
@@ -37,8 +38,7 @@ def load_prices():
         if pair in data:
             for p in data[pair]:
                 price_history[pair].append(p)
-    log.info(f"Loaded price history: " +
-             ", ".join(f"{p}={len(price_history[p])}" for p in PAIRS))
+    log.info("Loaded: " + ", ".join(f"{p}={len(price_history[p])}" for p in PAIRS))
 
 def timestamp():
     return str(int(time.time() * 1000))
@@ -104,7 +104,8 @@ def calc_bollinger(prices):
 
 def check_signal(pair):
     hist = price_history[pair]
-    if len(hist) < max(BB_PERIOD, RSI_PERIOD + 1):
+    needed = max(BB_PERIOD, RSI_PERIOD + 1)
+    if len(hist) < needed:
         return None
     price = list(hist)[-1]
     rsi = calc_rsi(hist)
@@ -151,6 +152,7 @@ def run():
     needed = max(BB_PERIOD, RSI_PERIOD + 1)
     load_prices()
     log.info("=== Bot started (RSI + Bollinger Bands) ===")
+    log.info(f"Need {needed} bars = ~{needed * INTERVAL // 60} mins to start")
     while True:
         for pair in PAIRS:
             price = get_ticker(pair)
