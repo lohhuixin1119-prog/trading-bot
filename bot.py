@@ -44,9 +44,21 @@ def get_balance():
     r = requests.get(f"{BASE_URL}/v3/balance", headers=headers, params=params)
     return r.json().get("SpotWallet", {})
 
+PRECISION = {
+    "BTC": 6,
+    "ETH": 4,
+    "BNB": 2
+}
+
 def place_order(pair, side, quantity):
+    coin = pair.split("/")[0]
+    precision = PRECISION.get(coin, 4)
+    quantity = round(quantity, precision)
+    if quantity <= 0:
+        log.warning(f"Quantity too small for {pair}")
+        return None
     payload = {"pair": pair, "side": side, "type": "MARKET",
-               "quantity": str(round(quantity, 6))}
+               "quantity": str(quantity)}
     headers, body = sign(payload)
     r = requests.post(f"{BASE_URL}/v3/place_order", headers=headers, data=body)
     return r.json()
