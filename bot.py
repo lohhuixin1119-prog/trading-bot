@@ -16,6 +16,8 @@ RSI_BUY    = 65
 RSI_SELL   = 35
 TRADE_PCT  = 0.1
 
+PRECISION  = {"BTC": 6, "ETH": 4, "BNB": 2}
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 log = logging.getLogger(__name__)
 
@@ -43,12 +45,6 @@ def get_balance():
     headers, params = sign({})
     r = requests.get(f"{BASE_URL}/v3/balance", headers=headers, params=params)
     return r.json().get("SpotWallet", {})
-
-PRECISION = {
-    "BTC": 6,
-    "ETH": 4,
-    "BNB": 2
-}
 
 def place_order(pair, side, quantity):
     coin = pair.split("/")[0]
@@ -115,15 +111,11 @@ def check_signal(pair):
     needed = EMA_SLOW + EMA_SIGNAL
     if len(hist) < needed:
         return None
-
     macd_line, signal_line, histogram = calc_macd(hist)
     rsi = calc_rsi(hist)
-
     if macd_line is None or signal_line is None or rsi is None:
         return None
-
     log.info(f"{pair} MACD={macd_line:.2f} Signal={signal_line:.2f} RSI={rsi:.1f}")
-
     if macd_line > signal_line and rsi < RSI_BUY:
         return "BUY"
     elif macd_line < signal_line and rsi > RSI_SELL:
@@ -136,15 +128,13 @@ def execute(pair, signal):
     usd_free  = float(wallet.get("USD",  {}).get("Free", 0))
     coin_free = float(wallet.get(coin,   {}).get("Free", 0))
     price     = price_history[pair][-1]
-
     if signal == "BUY" and usd_free > 1:
         qty = (usd_free * TRADE_PCT) / price
-        log.info(f">>> BUY  {pair} qty={qty:.6f} @ ~{price}")
+        log.info(f">>> BUY  {pair} qty={qty} @ ~{price}")
         log.info(place_order(pair, "BUY", qty))
-
     elif signal == "SELL" and coin_free > 0:
         qty = coin_free * TRADE_PCT
-        log.info(f">>> SELL {pair} qty={qty:.6f} @ ~{price}")
+        log.info(f">>> SELL {pair} qty={qty} @ ~{price}")
         log.info(place_order(pair, "SELL", qty))
 
 def run():
@@ -157,20 +147,15 @@ def run():
             if price is None:
                 log.warning(f"No ticker for {pair}")
                 continue
-
             price_history[pair].append(price)
             bars = len(price_history[pair])
-
             if bars < needed:
                 log.info(f"{pair} price={price:.2f} collecting {bars}/{needed}")
                 continue
-
             signal = check_signal(pair)
             log.info(f"{pair} price={price:.2f} signal={signal}")
-
             if signal in ("BUY", "SELL"):
                 execute(pair, signal)
-
         time.sleep(INTERVAL)
 
 if __name__ == "__main__":
