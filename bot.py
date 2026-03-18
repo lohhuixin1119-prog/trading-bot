@@ -6,24 +6,20 @@ API_KEY    = "YTtq1D8FlNv4grUh4zhg9J5S1KqPd1c3bwEkNAwKLEkIQCi6dsEY6Pdpc6HZp08P"
 SECRET_KEY = "Mck1HErBvHXzZqt5QQY0iQHj7US8qka4ZQC5NCVWOI7eqnjTQEa1lO806dG24erX"
 
 PAIRS      = ["BTC/USD", "ETH/USD", "BNB/USD"]
-INTERVAL   = 300
-TRADE_PCT  = 0.2
+INTERVAL   = 60
 
-# MACD 参数
-EMA_FAST   = 12
-EMA_SLOW   = 26
-EMA_SIGNAL = 9
-
-# RSI 参数
-RSI_PERIOD = 14
-RSI_BUY    = 55   # RSI 低于这个才买
-RSI_SELL   = 45   # RSI 高于这个才卖
+EMA_FAST   = 2
+EMA_SLOW   = 3
+EMA_SIGNAL = 2
+RSI_PERIOD = 3
+RSI_BUY    = 65
+RSI_SELL   = 35
+TRADE_PCT  = 0.1
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 log = logging.getLogger(__name__)
 
 price_history = {pair: deque(maxlen=100) for pair in PAIRS}
-last_signal   = {pair: None for pair in PAIRS}
 
 def timestamp():
     return str(int(time.time() * 1000))
@@ -72,7 +68,6 @@ def calc_macd(prices):
     if ema_fast is None or ema_slow is None:
         return None, None, None
     macd_line = ema_fast - ema_slow
-    # Signal line: EMA of last 9 MACD values
     macd_values = []
     prices_list = list(prices)
     for i in range(EMA_SIGNAL):
@@ -105,7 +100,8 @@ def calc_rsi(prices):
 
 def check_signal(pair):
     hist = price_history[pair]
-    if len(hist) < EMA_SLOW + EMA_SIGNAL:
+    needed = EMA_SLOW + EMA_SIGNAL
+    if len(hist) < needed:
         return None
 
     macd_line, signal_line, histogram = calc_macd(hist)
@@ -114,13 +110,10 @@ def check_signal(pair):
     if macd_line is None or signal_line is None or rsi is None:
         return None
 
-    log.info(f"{pair} MACD={macd_line:.2f} Signal={signal_line:.2f} "
-             f"Hist={histogram:.2f} RSI={rsi:.1f}")
+    log.info(f"{pair} MACD={macd_line:.2f} Signal={signal_line:.2f} RSI={rsi:.1f}")
 
-    # 买入：MACD 在 Signal 上方（金叉） + RSI 不超买
     if macd_line > signal_line and rsi < RSI_BUY:
         return "BUY"
-    # 卖出：MACD 在 Signal 下方（死叉） + RSI 不超卖
     elif macd_line < signal_line and rsi > RSI_SELL:
         return "SELL"
     return "HOLD"
@@ -143,9 +136,9 @@ def execute(pair, signal):
         log.info(place_order(pair, "SELL", qty))
 
 def run():
-    log.info("=== Bot started (MACD + RSI strategy) ===")
-    log.info(f"Need {EMA_SLOW + EMA_SIGNAL} bars to start = "
-             f"{(EMA_SLOW + EMA_SIGNAL) * INTERVAL // 60} minutes")
+    needed = EMA_SLOW + EMA_SIGNAL
+    log.info("=== Bot started (MACD + RSI 20-30x/day) ===")
+    log.info(f"Need {needed} bars = ~{needed} minutes to start")
     while True:
         for pair in PAIRS:
             price = get_ticker(pair)
@@ -155,7 +148,6 @@ def run():
 
             price_history[pair].append(price)
             bars = len(price_history[pair])
-            needed = EMA_SLOW + EMA_SIGNAL
 
             if bars < needed:
                 log.info(f"{pair} price={price:.2f} collecting {bars}/{needed}")
@@ -164,9 +156,8 @@ def run():
             signal = check_signal(pair)
             log.info(f"{pair} price={price:.2f} signal={signal}")
 
-            if signal in ("BUY", "SELL") and signal != last_signal[pair]:
+            if signal in ("BUY", "SELL"):
                 execute(pair, signal)
-                last_signal[pair] = signal
 
         time.sleep(INTERVAL)
 
